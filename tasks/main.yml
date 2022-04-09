@@ -1,0 +1,47 @@
+---
+# Include per-environment variables
+- include_vars: '{{ item }}'
+  with_first_found:
+    - files:
+        - '{{ ansible_distribution }}-{{ ansible_distribution_version }}.yml'           # CentOS-6.5
+        - '{{ ansible_os_family }}-{{ ansible_distribution_version }}.yml'              # RedHat-6.5
+        - '{{ ansible_distribution }}-{{ ansible_distribution_major_version }}.yml'     # CentOS-6
+        - '{{ ansible_os_family }}-{{ ansible_distribution_major_version }}.yml'        # RedHat-6
+        - '{{ ansible_distribution }}.yml'                                              # CentOS
+        - '{{ ansible_os_family }}.yml'                                                 # RedHat
+        - 'main.yml'
+      paths: '../vars'
+
+- name: main | link data dir
+  file:
+    src: "{{ keycloak_root_dir }}/keycloak"
+    dest: "{{ keycloak_default_root_dir }}/keycloak"
+    state: link
+  when: keycloak_root_dir != keycloak_default_root_dir
+
+- name: generate auto-signed certificat
+  tags: certificate
+  command: keytool -genkeypair -storepass password -storetype PKCS12 -keyalg RSA -keysize 2048 -dname "CN=server" -alias server -ext "SAN:c=DNS:localhost,IP:127.0.0.1,DNS:{{ ansible_fqdn }}" -keystore conf/server.keystore
+  args:
+    chdir: /var/lib/keycloak
+    creates: conf/server.keystore
+
+- name: download cas protocol jar
+  tags: jar
+  get_url:
+    url: https://github.com/jacekkow/keycloak-protocol-cas/releases/download/{{ keycloak_version }}/keycloak-protocol-cas-{{ keycloak_version }}.jar
+    dest: /var/lib/keycloak/providers/
+
+- name: keycloak server config
+  tags: config
+  command: bin/kc.sh config --db={{ keycloak_db_type }} -Dkc.db.url.host={{ keycloak_db_host }} --db-username={{ keycloak_db_user }} --db-password={{ keycloak_db_pass }} --http-enabled=true
+  args:
+    chdir: /var/lib/keycloak
+    creates: conf/persisted.properties
+
+- name: start keycloak service
+  service:
+    name: keycloak
+    state: started
+    enabled: yes
+

@@ -1,0 +1,36 @@
+---
+# defaults file for keycloak
+
+keycloak_service_name: keycloak
+keycloak_user: "{{ keycloak_service_name }}"
+keycloak_group: "{{ keycloak_service_name }}"
+keycloak_version: 12.0.2
+keycloak_url: "http://{{ ansible_fqdn }}"
+keycloak:
+  source_url: "https://github.com/keycloak/keycloak/releases/download/{{ keycloak_version }}/keycloak.x-preview-{{ keycloak_version }}.zip"
+  subpath: "keycloak.x-{{ keycloak_version }}"
+keycloak_java_version: 8
+keycloak_java_impl: openjdk
+keycloak_logs_dir: "{{ keycloak_default_root_dir }}/keycloack/standalone/log"
+keycloak_root_dir: "{{ keycloak_default_root_dir }}"
+keycloak_dir: "{{ keycloak_root_dir }}/keycloak"
+
+# Tuning
+keycloak_memory_size_prct: 0.75
+keycloak_memory_size: "{{ (ansible_memtotal_mb*keycloak_memory_size_prct)|int }}"
+
+# Admin user
+keycloak_admin_user: admin
+keycloak_admin_pass: changeme
+
+# Database
+# keycloack_db_host:
+keycloak_db_type: mysql
+keycloak_db_user: keycloak
+keycloak_db_name: keycloak
+keycloak_db_pass: "{{ lookup('password', 'credential/{{ inventory_hostname }}-keycloack_db_pass chars=ascii_letters,digits') }}"
+keycloak_db_port: 3306
+keycloak_limit_openfiles: 8192
+#keycloak_db_host: "{{ ansible_fqdn }}"
+keycloak_db_type: mysql
+keycloak_limit_openfiles: 8192

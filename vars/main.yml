@@ -1,0 +1,3 @@
+---
+# vars file for keycloak
+keycloak_default_root_dir: "/var/lib"
